@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "ChatGPT": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:52258;http://localhost:52259"
+    }
+  }
+}

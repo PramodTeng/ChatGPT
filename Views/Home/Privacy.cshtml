@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "Privacy Policy";
+}
+
+<div class="container">
+    <h1>@ViewData["Title"]</h1>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2>Information Collection</h2>
+            <p>This application collects and stores the following information:</p>
+            <ul>
+                <li>Chat messages you send to the AI model</li>
+                <li>AI model responses to your messages</li>
+                <li>Session information for conversation continuity</li>
+            </ul>
+            <p>This data is stored temporarily in server memory and is not permanently saved or shared with third parties.</p>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2>GitHub Access Token</h2>
+            <p>This application requires a GitHub personal access token with the <code>models:read</code> permission to function properly. This token is used to authenticate with the GitHub AI model inference service.</p>
+            <p>Your token is:</p>
+            <ul>
+                <li>Stored as an environment variable on the server</li>
+                <li>Never shared with third parties</li>
+                <li>Used only for authenticating with the GitHub AI model service</li>
+                <li>Not logged or stored in any persistent storage</li>
+            </ul>
+            <p>You should keep your GitHub token secure and never share it with unauthorized individuals.</p>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2>Data Retention</h2>
+            <p>Your conversation history is stored in server memory for the duration of your session (approximately 30 minutes of inactivity before it expires).</p>
+            <p>You can clear your conversation history at any time by clicking the "Clear Chat" button in the chat interface.</p>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h2>Changes to This Policy</h2>
+            <p>We may update our Privacy Policy from time to time. Any changes will be reflected on this page.</p>
+            <p>Last updated: May 2024</p>
+        </div>
+    </div>
+</div> 

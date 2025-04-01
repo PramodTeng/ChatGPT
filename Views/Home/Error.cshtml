@@ -1,0 +1,36 @@
+@model ChatGPT.Controllers.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Error</h1>
+    <p>An error occurred while processing your request.</p>
+    
+    @if (Model.ShowRequestId)
+    {
+                <p>
+                    <strong>Request ID:</strong> <code>@Model.RequestId</code>
+                </p>
+    }
+</div>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">What happened?</h5>
+                    <p class="card-text">There was an error processing your request. This could be due to one of the following reasons:</p>
+                    <ul>
+                        <li>The GitHub token might be invalid or expired</li>
+                        <li>The AI service might be temporarily unavailable</li>
+                        <li>There could be a connection issue with the AI model service</li>
+                        <li>An internal server error occurred</li>
+                    </ul>
+                    <a href="/" class="btn btn-primary">Return to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

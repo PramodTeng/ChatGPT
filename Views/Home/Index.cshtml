@@ -1,0 +1,230 @@
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2><i class="fas fa-robot me-2"></i>GitHub AI Chat</h2>
+            <button id="clear-chat" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-broom me-1"></i> Clear Chat
+            </button>
+        </div>
+        <div id="chat-body" class="chat-body">
+            <!-- Messages will be displayed here -->
+        </div>
+        <div class="chat-footer">
+            <div class="input-group">
+                <input type="text" id="message-input" class="form-control" placeholder="Type your message here...">
+                <div class="input-group-append">
+                    <button id="send-button" class="btn btn-primary send-button">
+                        <i class="fas fa-paper-plane me-1"></i>
+                        <i id="loading-spinner" class="fas fa-sync loading-spinner"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const chatBody = document.getElementById('chat-body');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const clearChatButton = document.getElementById('clear-chat');
+        let isStreaming = false;
+        let currentAssistantMessage = null;
+        let eventSource = null;
+
+        // Add initial system message
+        appendMessage('Welcome to GitHub AI Chat! How can I help you today?', 'assistant');
+
+        // Handle sending messages
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && !isStreaming) {
+                // Clear input
+                messageInput.value = '';
+
+                // Add user message to chat
+                appendMessage(message, 'user');
+
+                // Show loading spinner
+                loadingSpinner.style.display = 'inline-block';
+                sendButton.querySelector('.fa-paper-plane').style.display = 'none';
+                isStreaming = true;
+
+                // Create a typing indicator for the assistant
+                appendTypingIndicator();
+
+                // Start streaming
+                startStreaming(message);
+            }
+        }
+
+        // Add message to chat
+        function appendMessage(message, sender) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+
+            let icon, iconClass, messageClass;
+
+            if (sender === 'user') {
+                icon = 'fa-user';
+                iconClass = 'user-icon';
+                messageClass = 'user-message';
+
+                messageContainer.innerHTML = `
+                    <div class="message-bubble ${messageClass}">
+                        ${message}
+                    </div>
+                    <div class="message-icon ${iconClass}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                `;
+            } else {
+                icon = 'fa-robot';
+                iconClass = 'assistant-icon';
+                messageClass = 'assistant-message';
+
+                messageContainer.innerHTML = `
+                    <div class="message-icon ${iconClass}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="message-bubble ${messageClass}">
+                        ${formatMarkdown(message)}
+                    </div>
+                `;
+            }
+
+            chatBody.appendChild(messageContainer);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            return messageContainer;
+        }
+
+        // Add typing indicator
+        function appendTypingIndicator() {
+            currentAssistantMessage = document.createElement('div');
+            currentAssistantMessage.className = 'message-container';
+
+            currentAssistantMessage.innerHTML = `
+                <div class="message-icon assistant-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-bubble assistant-message">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+
+            chatBody.appendChild(currentAssistantMessage);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        // Format markdown
+        function formatMarkdown(text) {
+            return marked.parse(text);
+        }
+
+        // Stream messages using SSE
+        function startStreaming(message) {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`/Home/StreamMessageSSE?message=${encodeURIComponent(message)}`);
+
+            let assistantResponse = '';
+
+            eventSource.addEventListener('start', function (e) {
+                // Remove typing indicator when actual content starts coming in
+                if (currentAssistantMessage) {
+                    chatBody.removeChild(currentAssistantMessage);
+                    currentAssistantMessage = null;
+                }
+
+                // Create a new message container for assistant response
+                currentAssistantMessage = document.createElement('div');
+                currentAssistantMessage.className = 'message-container';
+
+                currentAssistantMessage.innerHTML = `
+                    <div class="message-icon assistant-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-bubble assistant-message">
+                        <div id="assistant-content"></div>
+                    </div>
+                `;
+
+                chatBody.appendChild(currentAssistantMessage);
+            });
+
+            eventSource.addEventListener('message', function (e) {
+                const messageBubble = currentAssistantMessage.querySelector('.message-bubble');
+                // Process the data from the SSE event
+                assistantResponse += e.data;
+                // Apply the markdown formatting to the accumulated response
+                messageBubble.innerHTML = formatMarkdown(assistantResponse);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            });
+
+            eventSource.addEventListener('end', function (e) {
+                finishStreaming();
+                eventSource.close();
+            });
+
+            eventSource.addEventListener('error', function (e) {
+                console.error('SSE Error:', e);
+                finishStreaming();
+
+                if (currentAssistantMessage) {
+                    const messageBubble = currentAssistantMessage.querySelector('.message-bubble');
+                    messageBubble.innerHTML += '<br><em class="text-danger">Error: Could not complete the response.</em>';
+                }
+
+                eventSource.close();
+            });
+        }
+
+        function finishStreaming() {
+            loadingSpinner.style.display = 'none';
+            sendButton.querySelector('.fa-paper-plane').style.display = 'inline-block';
+            isStreaming = false;
+            currentAssistantMessage = null;
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        clearChatButton.addEventListener('click', function () {
+            // Clear chat history on server
+            fetch('/Home/ClearChat', {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        // Clear chat UI
+                        chatBody.innerHTML = '';
+                        // Add welcome message again
+                        appendMessage('Welcome to GitHub AI Chat! How can I help you today?', 'assistant');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error clearing chat:', error);
+                });
+        });
+    });
+</script>
